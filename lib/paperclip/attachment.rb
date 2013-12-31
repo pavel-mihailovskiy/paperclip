@@ -30,12 +30,13 @@ module Paperclip
         :use_default_time_zone => true,
         :use_timestamp         => true,
         :whiny                 => Paperclip.options[:whiny] || Paperclip.options[:whiny_thumbnails],
-        :check_validity_before_processing => true
+        :check_validity_before_processing => true,
+        :compress              => {}
       }
     end
 
     attr_reader :name, :instance, :default_style, :convert_options, :queued_for_write, :whiny,
-                :options, :interpolator, :source_file_options, :whiny
+                :options, :interpolator, :source_file_options, :whiny, :compress
     attr_accessor :post_processing
 
     # Creates an Attachment object. +name+ is the name of the attachment,
@@ -81,6 +82,7 @@ module Paperclip
       @url_generator         = options[:url_generator].new(self, @options)
       @source_file_options   = options[:source_file_options]
       @whiny                 = options[:whiny]
+      @compress              = options[:compress]
 
       initialize_storage
     end
@@ -93,6 +95,7 @@ module Paperclip
     #   new_user.avatar = old_user.avatar
     def assign uploaded_file
       ensure_required_accessors!
+      uploaded_file = Paperclip::Compressor.new(uploaded_file, compress).perform! if compress.any?
       file = Paperclip.io_adapters.for(uploaded_file)
 
       return nil if not file.assignment?
